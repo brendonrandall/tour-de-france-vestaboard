@@ -1,0 +1,687 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tour de France Vestaboard Control Panel</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .main-content {
+            padding: 40px;
+        }
+
+        .control-section {
+            margin-bottom: 40px;
+            padding: 30px;
+            background: #f8f9fa;
+            border-radius: 15px;
+            border-left: 5px solid #007bff;
+        }
+
+        .control-section h2 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 1.8em;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #555;
+        }
+
+        .form-group select,
+        .form-group input[type="number"] {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        .form-group select:focus,
+        .form-group input[type="number"]:focus {
+            outline: none;
+            border-color: #007bff;
+        }
+
+        .button-group {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 30px;
+        }
+
+        .btn {
+            padding: 15px 25px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-stage {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+        }
+
+        .btn-gc {
+            background: linear-gradient(135deg, #ffeaa7 0%, #fab1a0 100%);
+            color: #333;
+        }
+
+        .btn-jerseys {
+            background: linear-gradient(135deg, #00b894 0%, #00cec9 100%);
+            color: white;
+        }
+
+        .btn-test {
+            background: linear-gradient(135deg, #a29bfe 0%, #6c5ce7 100%);
+            color: white;
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .status {
+            margin-top: 30px;
+            padding: 20px;
+            border-radius: 10px;
+            background: #e8f5e8;
+            border: 1px solid #4caf50;
+        }
+
+        .status.error {
+            background: #ffebee;
+            border-color: #f44336;
+        }
+
+        .status.loading {
+            background: #fff3e0;
+            border-color: #ff9800;
+        }
+
+        .status-content {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid #ddd;
+            border-top: 2px solid #007bff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .vestaboard-preview {
+            background: #2c3e50;
+            color: #ecf0f1;
+            padding: 20px;
+            border-radius: 10px;
+            font-family: 'Courier New', monospace;
+            margin-top: 20px;
+        }
+
+        .vestaboard-row {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 5px;
+        }
+
+        .vestaboard-char {
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 1px;
+            border-radius: 2px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .char-blank {
+            background: #34495e;
+        }
+
+        .char-text {
+            background: #ecf0f1;
+            color: #2c3e50;
+        }
+
+        .char-yellow {
+            background: #f1c40f;
+            color: #2c3e50;
+        }
+
+        .char-green {
+            background: #2ecc71;
+            color: white;
+        }
+
+        .char-red {
+            background: #e74c3c;
+            color: white;
+        }
+
+        .char-blue {
+            background: #3498db;
+            color: white;
+        }
+
+        .quick-actions {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .quick-action {
+            padding: 10px 20px;
+            background: #f8f9fa;
+            border: 2px solid #dee2e6;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .quick-action:hover {
+            background: #007bff;
+            color: white;
+            border-color: #007bff;
+        }
+
+        .current-info {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .current-info h3 {
+            margin-bottom: 10px;
+            font-size: 1.5em;
+        }
+
+        .current-info p {
+            margin: 5px 0;
+            opacity: 0.9;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                margin: 10px;
+            }
+
+            .header {
+                padding: 20px;
+            }
+
+            .header h1 {
+                font-size: 2em;
+            }
+
+            .main-content {
+                padding: 20px;
+            }
+
+            .button-group {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>🚴 Tour de France Vestaboard</h1>
+        <p>Control Panel for Real-time Race Updates</p>
+    </div>
+
+    <div class="main-content">
+        <div class="current-info">
+            <h3>Current Status</h3>
+            <p id="currentStage">Loading current stage...</p>
+            <p id="lastUpdate">Last update: Never</p>
+        </div>
+
+        <div class="control-section">
+            <h2>Quick Actions</h2>
+            <div class="quick-actions">
+                <div class="quick-action" onclick="sendQuickUpdate('current')">📊 Current Stage</div>
+                <div class="quick-action" onclick="sendQuickUpdate('gc')">🏆 GC Standings</div>
+                <div class="quick-action" onclick="sendQuickUpdate('jerseys')">👕 Jersey Holders</div>
+                <div class="quick-action" onclick="sendQuickUpdate('test')">🔧 Test Connection</div>
+            </div>
+        </div>
+
+        <div class="control-section">
+            <h2>Custom Display</h2>
+            <div class="form-group">
+                <label for="viewType">Display Type:</label>
+                <select id="viewType">
+                    <option value="combined">Combined View (Default)</option>
+                    <option value="stage">Stage Results Only</option>
+                    <option value="gc">GC Standings Only</option>
+                    <option value="jerseys">Jersey Holders Only</option>
+                    <option value="stage-detail">Stage Details</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="stageNumber">Stage Number:</label>
+                <input type="number" id="stageNumber" min="1" max="21" value="6"
+                       placeholder="Enter stage number (1-21)">
+            </div>
+
+            <div class="button-group">
+                <button class="btn btn-primary" onclick="sendCustomUpdate()">
+                    📱 Send Custom Update
+                </button>
+                <button class="btn btn-stage" onclick="sendStageUpdate()">
+                    🏁 Stage Results
+                </button>
+                <button class="btn btn-gc" onclick="sendGCUpdate()">
+                    🏆 GC Standings
+                </button>
+                <button class="btn btn-jerseys" onclick="sendJerseyUpdate()">
+                    👕 Jersey Holders
+                </button>
+                <button class="btn btn-test" onclick="sendTestMessage()">
+                    🔧 Test Connection
+                </button>
+            </div>
+        </div>
+
+        <div class="control-section">
+            <h2>System Controls</h2>
+            <div class="button-group">
+                <button class="btn btn-primary" onclick="refreshData()">
+                    🔄 Refresh Data
+                </button>
+                <button class="btn btn-primary" onclick="clearCache()">
+                    🗑️ Clear Cache
+                </button>
+                <button class="btn btn-primary" onclick="getStatus()">
+                    📊 System Status
+                </button>
+            </div>
+        </div>
+
+        <div id="status" class="status" style="display: none;">
+            <div class="status-content">
+                <div class="spinner" id="spinner" style="display: none;"></div>
+                <div id="statusText">Ready</div>
+            </div>
+        </div>
+
+        <div id="preview" class="vestaboard-preview" style="display: none;">
+            <h3>Vestaboard Preview</h3>
+            <div id="previewContent"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let isLoading = false;
+    const API_BASE = 'http://localhost:3001/api'; // Adjust port as needed
+
+    // Initialize the page
+    document.addEventListener('DOMContentLoaded', function () {
+        loadCurrentInfo();
+
+        // Set current stage number
+        const stageInput = document.getElementById('stageNumber');
+        stageInput.value = getCurrentStageFromDate();
+    });
+
+    // Get current stage based on date (July 2025)
+    function getCurrentStageFromDate() {
+        const today = new Date();
+        const month = today.getMonth() + 1; // 1-indexed
+        const day = today.getDate();
+
+        if (month === 7 && day >= 5 && day <= 27) {
+            return Math.min(Math.max(day - 4, 1), 21);
+        }
+        return 6; // Default fallback
+    }
+
+    // Updated loadCurrentInfo function to use GET
+    async function loadCurrentInfo() {
+        try {
+            const response = await fetch(`${API_BASE}/status`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
+            const data = await response.json();
+
+            document.getElementById('currentStage').textContent =
+                `Stage ${data.currentStage} - ${data.stageDate || 'Date TBD'}`;
+            document.getElementById('lastUpdate').textContent =
+                `Last update: ${data.lastUpdate || 'Never'}`;
+
+        } catch (error) {
+            console.error('Error loading current info:', error);
+            document.getElementById('currentStage').textContent = 'Unable to load current stage';
+            document.getElementById('lastUpdate').textContent = 'Error loading update time';
+        }
+    }
+
+    // Show status message
+    function showStatus(message, type = 'info') {
+        const statusDiv = document.getElementById('status');
+        const statusText = document.getElementById('statusText');
+        const spinner = document.getElementById('spinner');
+
+        statusDiv.className = `status ${type}`;
+        statusText.textContent = message;
+        statusDiv.style.display = 'block';
+
+        if (type === 'loading') {
+            spinner.style.display = 'block';
+        } else {
+            spinner.style.display = 'none';
+        }
+    }
+
+    // Hide status message
+    function hideStatus() {
+        const statusDiv = document.getElementById('status');
+        statusDiv.style.display = 'none';
+    }
+
+    // Disable all buttons
+    function setButtonsDisabled(disabled) {
+        const buttons = document.querySelectorAll('.btn');
+        buttons.forEach(button => {
+            button.disabled = disabled;
+        });
+        isLoading = disabled;
+    }
+
+    // Updated sendRequest function to handle both GET and POST
+    async function sendQuickUpdate(type) {
+        const stageNumber = document.getElementById('stageNumber').value || getCurrentStageFromDate();
+
+        switch(type) {
+            case 'current':
+                await sendRequest('update', {
+                    viewType: 'combined',
+                    stageNumber: parseInt(stageNumber)
+                }, 'POST');
+                break;
+            case 'gc':
+                await sendRequest('update', {
+                    viewType: 'gc',
+                    stageNumber: parseInt(stageNumber)
+                }, 'POST');
+                break;
+            case 'jerseys':
+                await sendRequest('update', {
+                    viewType: 'jerseys',
+                    stageNumber: parseInt(stageNumber)
+                }, 'POST');
+                break;
+            case 'test':
+                await sendRequest('test', {}, 'POST');
+                break;
+        }
+    }
+    async function sendRequest(endpoint, data = {}, method = 'POST') {
+        if (isLoading) {
+            showStatus('Please wait for current request to complete', 'error');
+            return;
+        }
+
+        setButtonsDisabled(true);
+        showStatus('Sending request...', 'loading');
+
+        const fullUrl = `${API_BASE}/${endpoint}`;
+        console.log(`Sending ${method} request to:`, fullUrl);
+        console.log('Request data:', data);
+
+        try {
+            const requestOptions = {
+                method: method,
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            };
+
+            // Only add body for POST requests
+            if (method === 'POST') {
+                requestOptions.body = JSON.stringify(data);
+            }
+
+            const response = await fetch(fullUrl, requestOptions);
+
+            console.log('Response status:', response.status);
+            console.log('Response ok:', response.ok);
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
+            const result = await response.json();
+            console.log('Response data:', result);
+
+            if (result.success || result.currentStage) {
+                showStatus(`✅ ${result.message || 'Request successful!'}`, 'success');
+                loadCurrentInfo(); // Refresh current info
+            } else {
+                showStatus(`❌ Error: ${result.error || 'Unknown error'}`, 'error');
+            }
+
+            return result;
+
+        } catch (error) {
+            console.error('Request error details:', error);
+
+            // More specific error messages
+            if (error.name === 'TypeError' && error.message.includes('fetch')) {
+                showStatus(`❌ Connection error: Cannot connect to server at ${API_BASE}`, 'error');
+            } else if (error.message.includes('CORS')) {
+                showStatus(`❌ CORS error: Cross-origin request blocked`, 'error');
+            } else {
+                showStatus(`❌ Network error: ${error.message}`, 'error');
+            }
+        } finally {
+            setButtonsDisabled(false);
+            setTimeout(hideStatus, 5000);
+        }
+    }
+
+    // Quick update functions
+    // All the other functions remain the same, but make sure they use POST
+    async function sendCustomUpdate() {
+        const viewType = document.getElementById('viewType').value;
+        const stageNumber = parseInt(document.getElementById('stageNumber').value);
+
+        if (!stageNumber || stageNumber < 1 || stageNumber > 21) {
+            showStatus('Please enter a valid stage number (1-21)', 'error');
+            return;
+        }
+
+        await sendRequest('update', { viewType, stageNumber }, 'POST');
+    }
+
+    async function sendStageUpdate() {
+        const stageNumber = parseInt(document.getElementById('stageNumber').value);
+        await sendRequest('update', { viewType: 'stage', stageNumber }, 'POST');
+    }
+
+    async function sendGCUpdate() {
+        const stageNumber = parseInt(document.getElementById('stageNumber').value);
+        await sendRequest('update', { viewType: 'gc', stageNumber }, 'POST');
+    }
+
+    async function sendJerseyUpdate() {
+        const stageNumber = parseInt(document.getElementById('stageNumber').value);
+        await sendRequest('update', { viewType: 'jerseys', stageNumber }, 'POST');
+    }
+
+    async function sendTestMessage() {
+        await sendRequest('test', {}, 'POST');
+    }
+
+    async function refreshData() {
+        await sendRequest('refresh', {}, 'POST');
+    }
+
+    async function clearCache() {
+        await sendRequest('clear-cache', {}, 'POST');
+    }
+
+    // Updated getStatus function to use GET
+    async function getStatus() {
+        if (isLoading) return;
+
+        setButtonsDisabled(true);
+        showStatus('Getting system status...', 'loading');
+
+        try {
+            const response = await fetch(`${API_BASE}/status`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
+            const data = await response.json();
+
+            const statusMessage = `System Status:
+- Current Stage: ${data.currentStage}
+- Stage Date: ${data.stageDate}
+- Cache Status: ${data.cacheStatus}
+- Last Update: ${data.lastUpdate}
+- API Status: ${data.apiStatus}`;
+
+            showStatus(statusMessage, 'info');
+
+        } catch (error) {
+            console.error('Status error:', error);
+            showStatus(`Error getting status: ${error.message}`, 'error');
+        } finally {
+            setButtonsDisabled(false);
+        }
+    }
+
+    // Keyboard shortcuts
+    document.addEventListener('keydown', function (event) {
+        if (event.ctrlKey || event.metaKey) {
+            switch (event.key) {
+                case '1':
+                    event.preventDefault();
+                    sendQuickUpdate('current');
+                    break;
+                case '2':
+                    event.preventDefault();
+                    sendQuickUpdate('gc');
+                    break;
+                case '3':
+                    event.preventDefault();
+                    sendQuickUpdate('jerseys');
+                    break;
+                case 't':
+                    event.preventDefault();
+                    sendQuickUpdate('test');
+                    break;
+            }
+        }
+    });
+
+    // Auto-refresh current info every 30 seconds
+    setInterval(loadCurrentInfo, 30000);
+</script>
+</body>
+</html>
