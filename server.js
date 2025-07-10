@@ -5,12 +5,16 @@ const path = require('path');
 const dotenv = require('dotenv');
 const axios = require('axios');
 const fs = require('fs');
+const https = require('https');
+const http = require('http');
 
 // Load environment variables
 dotenv.config();
 
 const app = express();
 const PORT = process.env.SERVER_PORT || 3001;
+const HTTPS_PORT = process.env.HTTPS_PORT || 3443;
+const USE_HTTPS = process.env.USE_HTTPS === 'true';
 
 // Middleware
 app.use(cors());
@@ -321,7 +325,9 @@ app.get('/api/status', (req, res) => {
         stageDate: `2025-07-${(4 + currentStage).toString().padStart(2, '0')}`,
         lastUpdate: cachedData ? new Date(cachedData.timestamp).toLocaleString() : 'Never',
         cacheStatus: cachedData ? 'Valid' : 'Empty',
-        apiStatus: READ_WRITE_KEY ? 'Configured' : 'Missing API Key'
+        apiStatus: READ_WRITE_KEY ? 'Configured' : 'Missing API Key',
+        protocol: USE_HTTPS ? 'HTTPS' : 'HTTP'
+
     });
 });
 
@@ -480,14 +486,89 @@ app.use((req, res) => {
 });
 
 // Start server
-app.listen(PORT, () => {
-    console.log(`🚀 Vestaboard API Server running on http://localhost:${PORT}`);
-    console.log(`📊 Frontend available at: http://localhost:${PORT}`);
-    console.log(`🔧 API endpoints available at: http://localhost:${PORT}/api/*`);
+// HTTPS Server Setup
+if (USE_HTTPS) {
+    try {
+        // Determine certificate path
+        const domain = process.env.DOMAIN || 'yourdomain.com';
+        const certPath = process.env.CERT_PATH || `/etc/letsencrypt/live/${domain}`;
 
-    if (!READ_WRITE_KEY) {
-        console.warn('⚠️  WARNING: VESTABOARD_READ_WRITE_KEY not found in environment variables');
+        let sslOptions;
+
+        // Try Let's Encrypt certificates first
+        try {
+            sslOptions = {
+                key: fs.readFileSync(path.join(certPath, 'privkey.pem')),
+                cert: fs.readFileSync(path.join(certPath, 'fullchain.pem'))
+            };
+            console.log('✅ Using Let\'s Encrypt certificates');
+        } catch (letsEncryptError) {
+            console.log('⚠️  Let\'s Encrypt certificates not found, trying self-signed...');
+
+            // Fallback to self-signed certificates
+            sslOptions = {
+                key: fs.readFileSync(path.join(__dirname, 'ssl', 'key.pem')),
+                cert: fs.readFileSync(path.join(__dirname, 'ssl', 'cert.pem'))
+            };
+            console.log('✅ Using self-signed certificates');
+        }
+
+        // Create HTTPS server
+        const httpsServer = https.createServer(sslOptions, app);
+
+        // Also create HTTP server for redirect
+        const httpApp = express();
+        httpApp.use((req, res) => {
+            const host = req.headers.host.split(':')[0];
+            const httpsPort = HTTPS_PORT === 443 ? '' : `:${HTTPS_PORT}`;
+            res.redirect(301, `https://${host}${httpsPort}${req.url}`);
+        });
+
+        // Start both servers
+        httpsServer.listen(HTTPS_PORT, () => {
+            console.log(`🔒 HTTPS Server running on https://localhost:${HTTPS_PORT}`);
+            console.log(`📊 Secure frontend: https://${domain}${HTTPS_PORT === 443 ? '' : ':' + HTTPS_PORT}`);
+            console.log(`🔧 Secure API: https://${domain}${HTTPS_PORT === 443 ? '' : ':' + HTTPS_PORT}/api/*`);
+
+            if (!READ_WRITE_KEY) {
+                console.warn('⚠️  WARNING: VESTABOARD_READ_WRITE_KEY not found in environment variables');
+            }
+        });
+
+        http.createServer(httpApp).listen(PORT, () => {
+            console.log(`🔀 HTTP redirect server running on http://localhost:${PORT}`);
+            console.log(`   (redirects to HTTPS)`);
+        });
+
+    } catch (error) {
+        console.error('❌ HTTPS setup failed:', error.message);
+        console.log('📄 Certificate paths checked:');
+        console.log(`   - Let's Encrypt: /etc/letsencrypt/live/${process.env.DOMAIN || 'yourdomain.com'}/`);
+        console.log(`   - Self-signed: ./ssl/`);
+        console.log('🔓 Falling back to HTTP...');
+
+        // Fallback to HTTP (your existing code)
+        app.listen(PORT, () => {
+            console.log(`🚀 Vestaboard API Server running on http://localhost:${PORT}`);
+            console.log(`📊 Frontend available at: http://localhost:${PORT}`);
+            console.log(`🔧 API endpoints available at: http://localhost:${PORT}/api/*`);
+
+            if (!READ_WRITE_KEY) {
+                console.warn('⚠️  WARNING: VESTABOARD_READ_WRITE_KEY not found in environment variables');
+            }
+        });
     }
-});
+} else {
+    // HTTP only (your existing code)
+    app.listen(PORT, () => {
+        console.log(`🚀 Vestaboard API Server running on http://localhost:${PORT}`);
+        console.log(`📊 Frontend available at: http://localhost:${PORT}`);
+        console.log(`🔧 API endpoints available at: http://localhost:${PORT}/api/*`);
+
+        if (!READ_WRITE_KEY) {
+            console.warn('⚠️  WARNING: VESTABOARD_READ_WRITE_KEY not found in environment variables');
+        }
+    });
+}
 
 module.exports = app;
